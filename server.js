@@ -83,7 +83,6 @@ class Room {
   startGame(){
     if(this.players.size<1) { console.log("StartGame aborted: No players."); return; }
     
-    // SMART MAP SIZING
     const radius = Math.max(5000, this.players.size * 600);
 
     this.phase='playing'; 
@@ -209,6 +208,11 @@ wss.on('connection', ws => {
     const st=ws.state, room=st.room?rooms.get(st.room):null;
 
     if(msg.type==='createRoom'){
+      // TEACHER PASSWORD CHECK
+      if(msg.password !== '1530') {
+        ws.send(JSON.stringify({type:'authError'}));
+        return;
+      }
       let pin; do{pin=String(rnd(100000,999999));}while(rooms.has(pin));
       const r=new Room(pin); r.teacher=ws; rooms.set(pin,r); st.room=pin; st.isTeacher=true;
       ws.send(JSON.stringify({type:'roomCreated',pin}));
@@ -235,7 +239,6 @@ wss.on('connection', ws => {
       return;
     }
 
-    // NEW: REJOIN LOGIC FOR RENDER 5-MINUTE DROPS
     if(msg.type==='rejoin'){
       const r=rooms.get(String(msg.pin));
       if(r && r.players.has(msg.id)){
@@ -284,15 +287,8 @@ wss.on('connection', ws => {
     if(msg.type==='answer'&&me&&room.questionRound){
       const q=room.questionRound.questions[me.id]; if(!q) return;
       if(msg.choice===q.correctIdx){
-        me.frozen=false; me.correct++; room.applyUpgrade(me); room.sendTo(me.id,{type:'answerResult',correct:true}); room.sendTeacher(room.playerListMsg());
-        
-        if(!me.alive && Date.now() >= me.respawnAt && me.hangar && me.hangar.alive) {
-             me.alive = true; me.hp = me.maxHp; me.pos = {x:me.hangar.x, y:0, z:me.hangar.z};
-             room.sendTo(me.id, {type:'respawn', pos:me.pos, quat:me.quat});
-        }
-
-        let all=true; for(const p of room.players.values()) if(p.frozen){all=false;break;}
-        if(all) room.endQuestionRound();
+        me.correct++; room.applyUpgrade(me); room.sendTo(me.id,{type:'answerResult',correct:true}); room.sendTeacher(room.playerListMsg());
+        // REMOVED auto-end question round here. It waits for teacher.
       } else room.sendTo(me.id,{type:'answerResult',correct:false});
       return;
     }
@@ -305,7 +301,7 @@ wss.on('connection', ws => {
         room.broadcast({type:'gameEnd',players:sorted.map(p=>({name:p.name,kills:p.kills,correct:p.correct, alive:(p.alive && p.hangar && p.hangar.alive)}))}); 
       }
       if(msg.type==='forceQuestion') room.triggerQuestion(true);
-      if(msg.type==='endQuestion') room.endQuestionRound();
+      if(msg.type==='resumeGame') room.endQuestionRound(); // NEW: Manual resume
       if(msg.type==='kick'){ 
         const p=room.players.get(msg.id); 
         if(p){ p.ws.send(JSON.stringify({type:'kicked'})); p.ws.close(); room.players.delete(msg.id); room.broadcastPlayers(room.playerListMsg()); room.sendTeacher(room.playerListMsg()); } 
@@ -317,7 +313,6 @@ wss.on('connection', ws => {
   ws.on('close',()=>{
     const st=ws.state; if(!st.room) return; const room=rooms.get(st.room); if(!room) return;
     if(st.isTeacher){ 
-      // If teacher disconnects, don't instantly delete room, give them time to reconnect
       setTimeout(()=>{
         if(room.teacher === ws) {
            room.broadcastPlayers({type:'roomClosed'}); 
@@ -328,7 +323,6 @@ wss.on('connection', ws => {
       return; 
     }
     if(st.id&&room.players.has(st.id)){ 
-      // Give players 15 seconds to auto-reconnect before removing them completely
       setTimeout(() => {
         const currentRoom = rooms.get(st.room);
         if (currentRoom && currentRoom.players.has(st.id) && currentRoom.players.get(st.id).ws === ws) {
@@ -352,7 +346,6 @@ setInterval(()=>{
     for(const p of room.players.values()) states.push({id:p.id,pos:p.pos,quat:p.quat,hp:p.hp,alive:p.alive});
     room.broadcastPlayers({type:'states',players:states});
     
-    // BROADCAST LEADERBOARD EVERY 1 SECOND
     if (serverTick % 10 === 0) {
       room.broadcastPlayers(room.playerListMsg());
     }
