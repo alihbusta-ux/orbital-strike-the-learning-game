@@ -119,9 +119,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
 <!-- PLAYER JOIN -->
 <div id="player-join" class="overlay hidden">
   <h2>JOIN GAME</h2>
-  <input id="name-input" placeholder="YOUR NAME" maxlength="20" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
-  <input id="academic-input" placeholder="ACADEMIC NUMBER (8 digits)" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-  <input id="pin-input" placeholder="PIN" maxlength="6" inputmode="numeric" style="font-size:1.8rem;letter-spacing:10px;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+  <input id="name-input" placeholder="YOUR NAME" maxlength="20" pattern="[A-Za-z\s]+" title="Letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
+  <input id="academic-input" placeholder="ACADEMIC NUMBER (8 digits)" maxlength="8" pattern="\d{8}" title="8 digits only" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+  <input id="pin-input" placeholder="PIN" maxlength="6" inputmode="numeric" style="font-size:1.8rem;letter-spacing:10px;" pattern="\d{6}" title="6 digits only" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
   <button class="btn-primary" onclick="doJoin()">ENTER</button>
   <button class="btn-secondary" style="margin-top:15px;font-size:0.9rem" onclick="showMainMenu()">BACK</button>
   <p id="join-err" style="color:#ff003c;margin-top:15px;min-height:1.4rem"></p>
