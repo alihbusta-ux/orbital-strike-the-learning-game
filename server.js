@@ -146,7 +146,6 @@ class Room {
       const gen = QGENS[key];
       type = key;
       
-      // GENERATE ONE QUESTION FOR EVERYONE
       const sharedQ = gen();
       for(const p of playersArr){
         questions[p.id] = sharedQ;
@@ -164,7 +163,6 @@ class Room {
       }
     }
 
-    // SEND THE QUESTION TO THE TEACHER DASHBOARD
     if(playersArr.length > 0) {
        const sampleQ = questions[playersArr[0].id];
        this.sendTeacher({type:'teacherQuestion', prompt: sampleQ.prompt, options: sampleQ.options, correctIdx: sampleQ.correctIdx});
