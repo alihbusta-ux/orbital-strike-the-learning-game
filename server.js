@@ -145,10 +145,11 @@ class Room {
       const key = pick(Object.keys(QGENS));
       const gen = QGENS[key];
       type = key;
-      const seen = new Set();
+      
+      // GENERATE ONE QUESTION FOR EVERYONE
+      const sharedQ = gen();
       for(const p of playersArr){
-        let q; for(let i=0;i<200;i++){ q=gen(); if(!seen.has(q.sig)) break; }
-        seen.add(q.sig); questions[p.id] = q;
+        questions[p.id] = sharedQ;
       }
     }
 
@@ -162,6 +163,13 @@ class Room {
           this.sendTo(p.id,{type:'question',qid:Date.now(),prompt:q.prompt,options:q.options,image:q.image}); 
       }
     }
+
+    // SEND THE QUESTION TO THE TEACHER DASHBOARD
+    if(playersArr.length > 0) {
+       const sampleQ = questions[playersArr[0].id];
+       this.sendTeacher({type:'teacherQuestion', prompt: sampleQ.prompt, options: sampleQ.options, correctIdx: sampleQ.correctIdx});
+    }
+
     this.sendTeacher({type:'questionStarted',qtype:type,manual:!!manual,count:playersArr.length}); 
     this.sendTeacher(this.playerListMsg());
   }
@@ -208,7 +216,6 @@ wss.on('connection', ws => {
     const st=ws.state, room=st.room?rooms.get(st.room):null;
 
     if(msg.type==='createRoom'){
-      // TEACHER PASSWORD CHECK
       if(msg.password !== '1530') {
         ws.send(JSON.stringify({type:'authError'}));
         return;
@@ -288,7 +295,6 @@ wss.on('connection', ws => {
       const q=room.questionRound.questions[me.id]; if(!q) return;
       if(msg.choice===q.correctIdx){
         me.correct++; room.applyUpgrade(me); room.sendTo(me.id,{type:'answerResult',correct:true}); room.sendTeacher(room.playerListMsg());
-        // REMOVED auto-end question round here. It waits for teacher.
       } else room.sendTo(me.id,{type:'answerResult',correct:false});
       return;
     }
@@ -301,7 +307,7 @@ wss.on('connection', ws => {
         room.broadcast({type:'gameEnd',players:sorted.map(p=>({name:p.name,kills:p.kills,correct:p.correct, alive:(p.alive && p.hangar && p.hangar.alive)}))}); 
       }
       if(msg.type==='forceQuestion') room.triggerQuestion(true);
-      if(msg.type==='resumeGame') room.endQuestionRound(); // NEW: Manual resume
+      if(msg.type==='resumeGame') room.endQuestionRound(); 
       if(msg.type==='kick'){ 
         const p=room.players.get(msg.id); 
         if(p){ p.ws.send(JSON.stringify({type:'kicked'})); p.ws.close(); room.players.delete(msg.id); room.broadcastPlayers(room.playerListMsg()); room.sendTeacher(room.playerListMsg()); } 
