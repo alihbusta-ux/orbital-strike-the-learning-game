@@ -155,6 +155,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
     </div>
   </div>
 
+  <!-- TEACHER SEES QUESTION PANEL -->
+  <div class="panel" id="teacher-question-panel" style="display:none; border-color: #ffaa00; box-shadow: 0 0 15px rgba(255,170,0,0.3);">
+    <h2 style="font-size:1.2rem; color: #ffaa00; margin-top: 0; text-align:center;">ACTIVE MATH QUESTION</h2>
+    <div id="teacher-q-prompt" style="font-size: 1.5rem; margin-bottom: 15px; color: white; text-align:center;"></div>
+    <div id="teacher-q-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 1.2rem;"></div>
+  </div>
+
   <div class="panel">
     <h2 style="font-size:1.2rem">Players (<span id="player-count">0</span>)</h2>
     <table id="player-table">
@@ -497,7 +504,6 @@ function showMainMenu() {
 function showPlayerJoin() { hideAllOverlays(); document.getElementById('player-join').classList.remove('hidden'); }
 function showTeacherDashboard() { hideAllOverlays(); document.getElementById('teacher-dashboard').classList.remove('hidden'); }
 
-// NEW: Custom Password Modal Logic
 function showPasswordModal() {
   hideAllOverlays();
   document.getElementById('password-modal').classList.remove('hidden');
@@ -519,11 +525,9 @@ function checkTeacherPassword() {
     setTimeout(() => document.getElementById('teacher-password-input').style.borderColor = '#00f3ff', 500);
   }
 }
-// Allow pressing Enter to submit password
 document.getElementById('teacher-password-input').addEventListener('keypress', function(e) {
   if (e.key === 'Enter') checkTeacherPassword();
 });
-
 
 function startSoloTest() {
   hideAllOverlays();
@@ -595,12 +599,8 @@ function handleServerMsg(msg){
       document.getElementById('btn-create').disabled = true; 
       log(`Room created: ${msg.pin}`); 
       break;
-    case 'playerList': 
-      if (isTeacherClient) renderTeacherPlayerList(msg.players);
-      else {
-         document.getElementById('lobby-players').innerHTML = msg.players.map(p => p.name).join('<br>');
-         if (isPlaying) updateLeaderboard(msg.players);
-      }
+    case 'teacherQuestion':
+      showTeacherQuestion(msg);
       break;
     case 'questionStarted':
       log(`Question started!`);
@@ -611,6 +611,14 @@ function handleServerMsg(msg){
       log(`Question ended!`);
       document.getElementById('btn-resume').disabled = true; 
       document.getElementById('btn-question').disabled = false;
+      hideTeacherQuestion();
+      break;
+    case 'playerList': 
+      if (isTeacherClient) renderTeacherPlayerList(msg.players);
+      else {
+         document.getElementById('lobby-players').innerHTML = msg.players.map(p => p.name).join('<br>');
+         if (isPlaying) updateLeaderboard(msg.players);
+      }
       break;
     case 'gameStart': 
       startMultiplayerGame(msg.hangars, msg.nextPauseAt); 
@@ -1096,6 +1104,22 @@ function applySoloUpgrade() {
       showToast(`⬆ Base hangar healed!`);
     }
   }
+}
+
+function showTeacherQuestion(msg) {
+  document.getElementById('teacher-question-panel').style.display = 'block';
+  document.getElementById('teacher-q-prompt').innerHTML = msg.prompt;
+  
+  const optsHTML = msg.options.map((opt, i) => {
+    const isCorrect = (i === msg.correctIdx) ? 'color: #00ff41; font-weight: bold; border-color: #00ff41;' : 'color: #aaa;';
+    return `<div style="border: 1px solid #00f3ff44; padding: 10px; border-radius: 5px; ${isCorrect}">${opt}</div>`;
+  }).join('');
+  
+  document.getElementById('teacher-q-options').innerHTML = optsHTML;
+}
+
+function hideTeacherQuestion() {
+  document.getElementById('teacher-question-panel').style.display = 'none';
 }
 
 function renderTeacherPlayerList(players){
