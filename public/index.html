@@ -10,7 +10,7 @@ body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', '
 .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 20px; box-sizing: border-box; }
 h1 { color: #00f3ff; text-shadow: 0 0 30px #00f3ff; letter-spacing: 8px; font-size: 2.8rem; margin: 0 0 10px; text-align: center; }
 h2 { color: #ffaa00; font-size: 1.5rem; margin: 10px 0; }
-input, textarea, select { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; padding: 12px 18px; border: 2px solid #00f3ff; background: #000; color: #fff; border-radius: 8px; outline: none; text-align: center; letter-spacing: 3px; margin-bottom: 15px; }
+input, textarea, select { font-family: 'Orbitron', 'Cairo', sans-serif; font-size: 1.3rem; padding: 12px 18px; border: 2px solid #00f3ff; background: #000; color: #fff; border-radius: 8px; outline: none; text-align: center; letter-spacing: 3px; margin-bottom: 15px; width: 320px; box-sizing: border-box; }
 button { font-family: 'Orbitron', 'Cairo', sans-serif; padding: 14px 32px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; letter-spacing: 2px; font-weight: bold; transition: 0.2s; }
 button:hover { transform: scale(1.05); }
 .btn-primary { background: #00f3ff; color: #000; box-shadow: 0 0 15px #00f3ff; }
@@ -49,7 +49,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
 .q-prompt { font-size: 2.5rem; color: #00f3ff; text-shadow: 0 0 20px #00f3ff; margin: 20px 0 30px; text-align: center; line-height: 1.4; }
 .q-image { max-width: 400px; max-height: 200px; border-radius: 10px; border: 2px solid #00f3ff; margin-bottom: 20px; }
 .q-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-width: 900px; width: 100%; }
-.q-opt { background: #001820; border: 3px solid #00f3ff; color: #00f3ff; padding: 20px; font-size: 1.5rem; border-radius: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-weight: bold; transition: 0.15s; }
+.q-opt { background: #001820; border: 3px solid #00f3ff; color: #00f3ff; padding: 20px; font-size: 1.5rem; border-radius: 12px; cursor: pointer; font-family: 'Orbitron', 'Cairo', sans-serif; font-weight: bold; transition: 0.15s; }
 .q-opt:hover { background: #003344; transform: scale(1.02); }
 .q-opt.correct { background: #00ff41; color: #000; border-color: #00ff41; }
 .q-opt.wrong { background: #ff003c; color: #fff; border-color: #ff003c; }
@@ -108,7 +108,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
 <!-- PASSWORD MODAL -->
 <div id="password-modal" class="overlay hidden" style="z-index: 500;">
   <h2>TEACHER ACCESS</h2>
-  <input type="password" id="teacher-password-input" placeholder="PASSWORD" maxlength="10" style="font-size:1.8rem;letter-spacing:10px; width:300px;">
+  <input type="password" id="teacher-password-input" placeholder="PASSWORD" maxlength="10" style="font-size:1.8rem;letter-spacing:10px;">
   <div style="display:flex; gap:20px; margin-top:20px;">
     <button class="btn-primary" onclick="checkTeacherPassword()">ENTER</button>
     <button class="btn-secondary" onclick="hidePasswordModal()">CANCEL</button>
@@ -119,9 +119,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
 <!-- PLAYER JOIN -->
 <div id="player-join" class="overlay hidden">
   <h2>JOIN GAME</h2>
-  <input id="name-input" placeholder="YOUR NAME" maxlength="20" pattern="[A-Za-z\s]+" title="Letters and spaces only" oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')">
-  <input id="academic-input" placeholder="ACADEMIC NUMBER (8 digits)" maxlength="8" pattern="\d{8}" title="8 digits only" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-  <input id="pin-input" placeholder="PIN" maxlength="6" inputmode="numeric" style="font-size:1.8rem;letter-spacing:10px;" pattern="\d{6}" title="6 digits only" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+  <!-- FIXED: Allowed Arabic letters -->
+  <input id="name-input" placeholder="YOUR NAME" maxlength="20" oninput="this.value = this.value.replace(/[^a-zA-Z\u0600-\u06FF\s]/g, '')">
+  <input id="academic-input" placeholder="ACADEMIC NUMBER" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+  <input id="pin-input" placeholder="PIN" maxlength="6" inputmode="numeric" style="font-size:1.8rem;letter-spacing:10px;" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
   <button class="btn-primary" onclick="doJoin()">ENTER</button>
   <button class="btn-secondary" style="margin-top:15px;font-size:0.9rem" onclick="showMainMenu()">BACK</button>
   <p id="join-err" style="color:#ff003c;margin-top:15px;min-height:1.4rem"></p>
@@ -241,9 +242,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
 
 <!-- ELIMINATED OVERLAY -->
 <div id="eliminated-overlay">
-  <h1 style="color:#ff003c;font-size:3rem">ELIMINATED</h1>
-  <p style="font-size:1.2rem; color:#ccc;">Your hangar was destroyed and you were killed.</p>
-  <p style="font-size:1.2rem; color:#ffaa00; margin-top:10px;">You are out of the game. Waiting for the teacher to end it...</p>
+  <h1 style="color:#ff003c;font-size:3rem">SHIP & HANGAR DESTROYED</h1>
+  <p style="font-size:1.2rem; color:#ccc;">You are temporarily out of the game.</p>
+  <p style="font-size:1.2rem; color:#ffaa00; margin-top:10px; font-weight:bold;">Answer the NEXT math question correctly to REVIVE!</p>
 </div>
 
 <!-- PODIUM OVERLAY -->
@@ -613,6 +614,16 @@ function handleServerMsg(msg){
       document.getElementById('btn-question').disabled = false;
       hideTeacherQuestion();
       break;
+    case 'hangarRestored':
+      if (msg.id === myId) {
+          if (hangars[0]) hangars[0].mesh.visible = true;
+          document.getElementById('hangar-hp').innerText = '100%';
+          document.getElementById('hangar-hp').style.color = '#ffaa00';
+      } else if (remoteHangars.has(msg.id)) {
+          remoteHangars.get(msg.id).group.visible = true;
+          remoteHangars.get(msg.id).alive = true;
+      }
+      break;
     case 'playerList': 
       if (isTeacherClient) renderTeacherPlayerList(msg.players);
       else {
@@ -637,11 +648,13 @@ function handleServerMsg(msg){
       break;
     case 'respawn': 
       myAlive = true; myHp = myMaxHp; 
+      isEliminated = false;
       document.getElementById('health-fill').style.width = '100%';
       shipGroup.position.set(msg.pos.x, msg.pos.y, msg.pos.z); 
       shipGroup.quaternion.set(msg.quat.x, msg.quat.y, msg.quat.z, msg.quat.w); 
       shipVelocity.set(0,0,0); velocity = 0; 
       document.getElementById('respawn-overlay').style.display = 'none'; 
+      document.getElementById('eliminated-overlay').style.display = 'none'; 
       document.getElementById('click-to-play').style.display = 'flex'; 
       break;
     case 'eliminated':
