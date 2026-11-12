@@ -155,12 +155,11 @@ class Room {
     this.questionRound={type,questions,startedAt:Date.now(),manual:!!manual}; 
     this.phase='question';
     
+    // FIX: Send questions to everyone, including dead players so they can revive
     for(const p of playersArr){ 
-      if (p.hangar && p.hangar.alive && !p.eliminated) {
-          p.frozen=true; 
-          const q=questions[p.id]; 
-          this.sendTo(p.id,{type:'question',qid:Date.now(),prompt:q.prompt,options:q.options,image:q.image}); 
-      }
+      p.frozen=true; 
+      const q=questions[p.id]; 
+      this.sendTo(p.id,{type:'question',qid:Date.now(),prompt:q.prompt,options:q.options,image:q.image}); 
     }
 
     if(playersArr.length > 0) {
@@ -292,7 +291,27 @@ wss.on('connection', ws => {
     if(msg.type==='answer'&&me&&room.questionRound){
       const q=room.questionRound.questions[me.id]; if(!q) return;
       if(msg.choice===q.correctIdx){
-        me.correct++; room.applyUpgrade(me); room.sendTo(me.id,{type:'answerResult',correct:true}); room.sendTeacher(room.playerListMsg());
+        me.correct++; room.applyUpgrade(me); room.sendTo(me.id,{type:'answerResult',correct:true}); 
+        
+        // REVIVAL LOGIC
+        if (!me.alive) {
+            me.alive = true;
+            me.eliminated = false;
+            me.hp = me.maxHp;
+            if (me.hangar && !me.hangar.alive) {
+                me.hangar.alive = true;
+                me.hangar.hp = me.hangar.maxHp;
+                room.broadcastPlayers({type:'hangarHP', id: me.id, hp: me.hangar.hp, maxHp: me.hangar.maxHp});
+                room.broadcastPlayers({type:'hangarRestored', id: me.id});
+            }
+            me.pos = {x: me.hangar.x, y: 0, z: me.hangar.z};
+            room.sendTo(me.id, {type:'respawn', pos: me.pos, quat: me.quat});
+            room.sendTo(me.id, {type:'upgrade', msg: 'You revived your ship and hangar!'});
+        }
+
+        room.sendTeacher(room.playerListMsg());
+        let all=true; for(const p of room.players.values()) if(p.frozen){all=false;break;}
+        if(all) room.endQuestionRound();
       } else room.sendTo(me.id,{type:'answerResult',correct:false});
       return;
     }
@@ -365,7 +384,11 @@ setInterval(()=>{
           const dx=p.pos.x-m.pos.x,dy=p.pos.y-m.pos.y,dz=p.pos.z-m.pos.z;
           if(dx*dx+dy*dy+dz*dz<3600){
             p.hp-=m.damage; 
-            if(p.hp<=0){ p.alive=false; p.respawnAt=Date.now()+3000; const sh=room.players.get(m.owner); if(sh) sh.kills++; room.broadcast({type:'explosion',x:p.pos.x,y:p.pos.y,z:p.pos.z,big:true}); } 
+            if(p.hp<=0){ 
+                p.alive=false; p.respawnAt=Date.now()+3000; 
+                const sh=room.players.get(m.owner); if(sh) sh.kills++; 
+                room.broadcast({type:'explosion',x:p.pos.x,y:p.pos.y,z:p.pos.z,big:true}); 
+            } 
             else room.broadcast({type:'explosion',x:m.pos.x,y:m.pos.y,z:m.pos.z,big:false});
             room.sendTo(p.id,{type:'hp',hp:Math.max(0,p.hp),maxHp:p.maxHp}); hit=true; break;
           }
@@ -377,7 +400,12 @@ setInterval(()=>{
           const dx=owner.hangar.x-m.pos.x,dz=owner.hangar.z-m.pos.z;
           if(dx*dx+dz*dz<490000&&Math.abs(m.pos.y)<300){
             h.hp-=m.damage; room.broadcast({type:'explosion',x:m.pos.x,y:m.pos.y,z:m.pos.z,big:false}); room.broadcastPlayers({type:'hangarHP',id:owner.id,hp:h.hp,maxHp:h.maxHp});
-            if(h.hp<=0){ h.alive=false; h.hp=0; room.broadcast({type:'explosion',x:h.x,y:0,z:h.z,big:true}); room.broadcastPlayers({type:'hangarDestroyed',id:owner.id}); }
+            if(h.hp<=0){ 
+                h.alive=false; h.hp=0; 
+                const sh=room.players.get(m.owner); if(sh) sh.kills++; 
+                room.broadcast({type:'explosion',x:h.x,y:0,z:h.z,big:true}); 
+                room.broadcastPlayers({type:'hangarDestroyed',id:owner.id}); 
+            }
             hit=true; break;
           }
         }
