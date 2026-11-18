@@ -258,6 +258,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow
 <!-- CREDITS -->
 <div id="credits">
   <div>Directed by Ali Hasan Al Busta</div>
+  <div class="arabic">مساعده حسن زكريا البوسطة</div>
   <div class="arabic">اشراف معلم الرياضيات أ.إبرهيم محمد</div>
   <div class="arabic">مدرسة الجابرية الثانوية الصناعية للبنين</div>
 </div>
@@ -692,9 +693,8 @@ function handleServerMsg(msg){
       if(rh && rh.group) rh.group.visible = false;
       break;
     case 'question': 
-      // REMOVED THE BLOCK: Now dead players can receive the question to revive
       document.getElementById('respawn-overlay').style.display = 'none'; 
-      document.getElementById('eliminated-overlay').style.display = 'none'; // Hide dead screen to show question
+      document.getElementById('eliminated-overlay').style.display = 'none'; 
       showQuestion(msg); 
       break;
     case 'answerResult': handleAnswerResult(msg.correct); break;
@@ -708,7 +708,7 @@ function handleServerMsg(msg){
       } else if (!isEliminated) {
           document.getElementById('respawn-overlay').style.display = 'flex'; 
       } else {
-          document.getElementById('eliminated-overlay').style.display = 'flex'; // Bring back dead screen if still dead
+          document.getElementById('eliminated-overlay').style.display = 'flex'; 
       }
       break;
     case 'upgrade': showToast('⬆ ' + msg.msg); break;
